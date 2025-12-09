@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Mission } from "../types";
 
+// In Vite config, process.env.API_KEY is replaced by the actual key string during build
 const API_KEY = process.env.API_KEY || '';
 
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
@@ -17,7 +18,7 @@ export const generateRobertDialogue = async (context: string): Promise<string> =
         Gebruik Vlaamse straattaal of typische uitspraken zoals 'alle dagen'.
       `,
     });
-    return response.text.trim();
+    return response.text ? response.text.trim() : "Mmm...";
   } catch (error) {
     console.error("Gemini error:", error);
     return "Godverdomme, ik ben de draad kwijt.";
@@ -53,12 +54,13 @@ export const generateMission = async (): Promise<Mission> => {
       }
     });
 
-    const data = JSON.parse(response.text.trim());
+    const text = response.text || "{}";
+    const data = JSON.parse(text.trim());
     return {
       id: Math.random().toString(36).substr(2, 9),
-      title: data.title,
-      description: data.description,
-      objective: data.objective,
+      title: data.title || "Missie",
+      description: data.description || "Doe iets.",
+      objective: data.objective || "Klaar het klusje.",
       type: data.type === 'kill' || data.type === 'delivery' ? data.type : 'misc',
       reward: Math.floor(Math.random() * 50) + 50,
       completed: false
