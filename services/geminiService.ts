@@ -1,10 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Mission } from "../types";
 
-// API key must be obtained exclusively from process.env.API_KEY
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateRobertDialogue = async (context: string): Promise<string> => {
+  if (!process.env.API_KEY) return "Geen API key... (mompelt iets)";
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -24,6 +25,18 @@ export const generateRobertDialogue = async (context: string): Promise<string> =
 };
 
 export const generateMission = async (): Promise<Mission> => {
+  if (!process.env.API_KEY) {
+    return {
+      id: 'offline-1',
+      title: 'De Afrekening',
+      description: 'Iemand heeft je bier gestolen.',
+      objective: 'Schakel de dief uit.',
+      type: 'kill',
+      reward: 50,
+      completed: false
+    };
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -32,7 +45,7 @@ export const generateMission = async (): Promise<Mission> => {
               Kies willekeurig uit:
               1. Een moordmissie ("kill"): Iemand moet dood omdat hij vervelend deed.
               2. Een levermissie ("delivery"): Breng bier of iets illegaals ergens heen.
-            `,
+      `,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -41,15 +54,14 @@ export const generateMission = async (): Promise<Mission> => {
             title: { type: Type.STRING },
             description: { type: Type.STRING },
             objective: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ["kill", "delivery", "misc"] },
+            type: { type: Type.STRING },
           },
           required: ["title", "description", "objective", "type"],
-        }
+        },
       }
     });
 
-    const text = response.text || "{}";
-    const missionData = JSON.parse(text);
+    const missionData = JSON.parse(response.text || "{}");
 
     return {
       id: Math.random().toString(36).substr(2, 9),
