@@ -4,16 +4,16 @@ import { Mission } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateRobertDialogue = async (context: string): Promise<string> => {
-  if (!process.env.API_KEY) return "Geen API key... (mompelt iets)";
+  if (!process.env.API_KEY) return "Geen API key... (mompelt iets onverstaanbaars)";
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
-              Je bent Robert, een cynische, alcoholische man van middelbare leeftijd in een Vlaams dorp.
-              Geef een korte reactie (max 1 zin) op de volgende situatie: "${context}".
-              Gebruik Vlaamse straattaal of typische uitspraken zoals 'alle dagen'.
-            `
+        Je bent Robert, een cynische, alcoholische man van middelbare leeftijd in een Vlaams dorp.
+        Geef een korte reactie (max 1 zin) op de volgende situatie: "${context}".
+        Gebruik Vlaamse straattaal of typische uitspraken zoals 'alle dagen'.
+      `
     });
 
     return response.text?.trim() || "Mmm...";
@@ -41,10 +41,12 @@ export const generateMission = async (): Promise<Mission> => {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
-              Verzin een korte GTA-missie voor Robert (alcoholist). 
-              Kies willekeurig uit:
-              1. Een moordmissie ("kill"): Iemand moet dood omdat hij vervelend deed.
-              2. Een levermissie ("delivery"): Breng bier of iets illegaals ergens heen.
+        Verzin een korte GTA-missie voor Robert (alcoholist). 
+        Kies willekeurig uit:
+        1. Een moordmissie ("kill"): Iemand moet dood omdat hij vervelend deed.
+        2. Een levermissie ("delivery"): Breng bier of iets illegaals ergens heen.
+        
+        Geef antwoord in JSON: { "title": "...", "description": "...", "objective": "...", "type": "kill" of "delivery" }
       `,
       config: {
         responseMimeType: "application/json",
@@ -54,14 +56,16 @@ export const generateMission = async (): Promise<Mission> => {
             title: { type: Type.STRING },
             description: { type: Type.STRING },
             objective: { type: Type.STRING },
-            type: { type: Type.STRING },
-          },
-          required: ["title", "description", "objective", "type"],
-        },
+            type: { type: Type.STRING }
+          }
+        }
       }
     });
 
-    const missionData = JSON.parse(response.text || "{}");
+    const text = response.text;
+    if (!text) throw new Error("No text response");
+    
+    const missionData = JSON.parse(text.trim());
 
     return {
       id: Math.random().toString(36).substr(2, 9),
